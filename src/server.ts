@@ -1,10 +1,22 @@
 import fastify from "fastify";
 import { getGraphQLParameters, processRequest, renderGraphiQL, sendResult, shouldRenderGraphiQL } from "graphql-helix";
+import { InMemoryLiveQueryStore } from "@n1ru4l/in-memory-live-query-store";
+
+
+
+const liveQueryStore = new InMemoryLiveQueryStore();
+
 import schema from "./schema"
 
 const app = fastify({
   logger: true
 });
+
+app.register(require('fastify-cors'), {
+  origin: "*",
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+})
+
 
 app.route({
   method: ["GET", "POST"],
@@ -34,6 +46,10 @@ app.route({
         variables,
         request,
         schema,
+        contextFactory: () => ({
+        liveQueryStore,
+      }),
+      execute: liveQueryStore.execute,
       });
 
       sendResult(result, res.raw);
